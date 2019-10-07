@@ -234,6 +234,56 @@ for i = 1:length(massflow)
     end
 end
 
-pressure_min = min(pressure_drop);
-pressure_max = max(pressure_drop);
+h_inverse = 1./h;
 
+% For the 4 calculations below, I may need to add the (:) to each of the 4D
+% arrays when I add more inputs
+[pressure_min, pressure_min_index] = min(pressure_drop);
+[pressure_max, pressure_max_index] = max(pressure_drop);
+[h_inv_min, h_inv_min_index] = min(h_inverse);
+[h_inv_max, h_inv_max_index] = max(h_inverse);
+
+% Normalized pressure and heat transfer vector
+normalized_pressure = (pressure_drop - pressure_min)./(pressure_max - pressure_min);
+normalized_h_inv = (h_inverse - h_inv_min)./(h_inv_max - h_inv_min);
+
+distance = sqrt(normalized_pressure.*normalized_pressure + normalized_h_inv.*normalized_h_inv);
+
+[distance_min, distance_min_index] = min(distance(:));
+[h_max, h_max_index] = max(h); % Potentially unnecessary line
+
+% Enbsure that this is the proper use of these functions
+[a,b,c,d] = ind2sub(size(distance), distance_min_index); % Dont necessarily be concerned about getting different indices for this, they should be different
+[a_h,b_h,c_h,d_h] = ind2sub(size(h), h_max_index);
+[a_p,b_p,c_p,d_p] = ind2sub(size(pressure_drop), pressure_min_index);
+
+% Find a more efficient way to to these (use matrices)
+massflow_utopia = massflow(a);
+angle_utopia = pipe_angle(b);
+diameter_utopia = inlet_diameter(c);
+heat_utopia = heat_input(d);
+
+massflow_max_h = massflow(a_h);
+angle_max_h = pipe_angle(b_h);
+diameter_max_h = inlet_diameter(c_h);
+heat_max_h = heat_input(d_h);
+
+massflow_min_pressure = massflow(a_p);
+angle_min_pressure = pipe_angle(b_p);
+diameter_min_pressure = inlet_diameter(c_p);
+heat_min_pressure = heat_input(d_p);
+
+% Plots that I want to do
+% Quality as a function of axial distance
+% Exit quality as a function of pipe angle
+% Change in quality for each pipe increment (for a given angle)
+
+% Figure out what this is doing and find a cleaner way to do it
+plot(z, reshape(quality(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+plot(z, reshape(quality(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+plot(z, reshape(quality(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3);
