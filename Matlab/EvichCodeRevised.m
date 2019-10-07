@@ -69,6 +69,7 @@ cross_area = zeros(length(inlet_diameter), length(pipe_angle), length(z));
 h_inc = linspace(0, 0, 250); % Why is this necessary
 h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 pressure_inc = linspace(0, 0, 249); % Why is this necessary
+pressure_drop = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 
 %
 % ----------------- Calculating diameter as a function of z for every pipe
@@ -227,10 +228,12 @@ for i = 1:length(massflow)
                         (pi*D*q_flux)/(w*H_fv) + G*sin(THETA)/(1/RHO_f+...
                         quality_p(i,j,k,m,n)*V_avg))*(z_increment);
                 end
-                
+                pressure_drop(i,j,k,m) = sum(pressure_inc);
             end
         end
     end
 end
 
+pressure_min = min(pressure_drop);
+pressure_max = max(pressure_drop);
 
