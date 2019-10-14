@@ -7,7 +7,7 @@ clc, clear;
 % Length of pipe (m)
 L = 1;
 % Gravitational constant (m/s^2)
-G = 9.81;
+Grav = 9.81;
 % Inlet temperature of fluid (K)
 T_inlet = 373.15;
 % Saturation temperature of water (K)
@@ -68,7 +68,8 @@ cross_area = zeros(length(inlet_diameter), length(pipe_angle), length(z));
 % h_inc = zeros(length(z));
 h_inc = linspace(0, 0, 250); % Why is this necessary
 h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
-pressure_inc = linspace(0, 0, 249); % Why is this necessary
+% pressure_inc = linspace(0, 0, 249); % Why is this necessary
+pressure_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 pressure_drop = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 
 %
@@ -158,7 +159,9 @@ for i = 1:length(massflow)
                         (1 + 12.7*(darcyf/8)^0.5*(PR^(2/3)-1)); % Calculating
                     % single phase convection coefficient
                     
-                    if (w/(A*RHO_f))^2/(G*D) >= 0.04 % Conditional statement to 
+                    % Ensure that this is supposed to be grav and not G
+                    % (areal flow rate)
+                    if (w/(A*RHO_f))^2/(Grav*D) >= 0.04 % Conditional statement to 
                         % determine FFr (what is FFr)
                         FFr = 1;
                     else % Figure out where this equation comes from and make s
@@ -187,7 +190,7 @@ for i = 1:length(massflow)
                     end
                     
                     % Why is this here?
-                    if sqrt(SIGMA/(G*(RHO_f-RHO_v)))/D >= 0.5 % Setting
+                    if sqrt(SIGMA/(Grav*(RHO_f-RHO_v)))/D >= 0.5 % Setting
                         % confinement number limit
                         h(i,j,k,m) = NaN;
                     else
@@ -223,12 +226,14 @@ for i = 1:length(massflow)
                     MU_bar = quality_p(i,j,k,m,n)*MU_v...
                         + (1-quality_p(i,j,k,m,n))*MU_f;
                     fTP = ffo*(MU_bar/MU_f)^N; 
-                    pressure_inc(n) = (2/D*fTP/RHO_f*G^2*(1+...
+                    % pressure_inc(i,j,k,m,n)
+                    pressure_inc(i,j,k,m,n) = (2/D*fTP/RHO_f*G^2*(1+...
                         quality_p(i,j,k,m,n)*V_avg*RHO_f) + G^2*V_avg*...
-                        (pi*D*q_flux)/(w*H_fv) + G*sin(THETA)/(1/RHO_f+...
+                        (pi*D*q_flux)/(w*H_fv) + Grav*sin(THETA)/(1/RHO_f+... % ERROR: G is not g
                         quality_p(i,j,k,m,n)*V_avg))*(z_increment);
                 end
-                pressure_drop(i,j,k,m) = sum(pressure_inc);
+                pressure_drop(i,j,k,m) = sum(pressure_inc(i,j,k,m,:));
+                % pressure_drop(i,j,k,m) = sum(pressure_inc);
             end
         end
     end
@@ -286,4 +291,72 @@ plot(z, reshape(quality(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet d
 str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
 str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
 str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
-legend(str1, str2, str3);
+legend(str1, str2, str3, 'Location', 'northwest');
+% title('');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Flow Quality');
+
+figure;
+yyaxis left;
+plot(pipe_angle, pressure_drop);
+ylabel('Total Pressure Drop (Pa)');
+yyaxis right;
+semilogy(pipe_angle, pressure_drop);
+xlabel('Pipe Angle (degrees)');
+legend('Linear','Logarithmic');
+
+figure;
+plot(z(2:250), reshape(pressure_inc(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+plot(z(2:250), reshape(pressure_inc(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+plot(z(2:250), reshape(pressure_inc(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+% title('');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Incremental Pressure Drop (Pa)');
+
+% Logarithmic pressure drop
+figure;
+semilogy(z(2:250), reshape(pressure_inc(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+semilogy(z(2:250), reshape(pressure_inc(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+semilogy(z(2:250), reshape(pressure_inc(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+% title('');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Incremental Pressure Drop (Pa)');
+
+% Linear Cumulative Pressure Drop
+figure;
+plot(z(2:250), cumsum(reshape(pressure_inc(1,b,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+plot(z(2:250), cumsum(reshape(pressure_inc(1,b_h,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
+plot(z(2:250), cumsum(reshape(pressure_inc(1,b_p,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+% title('');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Cumulative Pressure Drop (Pa)');
+
+% Logarithmic Cumulative Pressure Drop
+
+figure;
+semilogy(z(2:250), cumsum(reshape(pressure_inc(1,b,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+semilogy(z(2:250), cumsum(reshape(pressure_inc(1,b_h,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
+semilogy(z(2:250), cumsum(reshape(pressure_inc(1,b_p,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+% title('');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Cumulative Pressure Drop (Pa)');
