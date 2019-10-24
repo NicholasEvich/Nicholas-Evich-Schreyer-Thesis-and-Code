@@ -46,9 +46,8 @@ massflow = 0.5;
 inlet_diameter = 0.01;
 % Pipe angle in degrees
 pipe_angle = linspace(0,45,100); 
-% Heat inputs from 500 W to 5 MW in multiples of 10
-% heat_input = 5*logspace(2,6,5);
-heat_input = 500;
+heat_input = linspace(902300, 902400, 100);
+% heat_input = 500;
 %
 z = linspace(0, L, 250); % Consider making this an odd number so I get the middle section
 % or use some other mathematical method to reduce error
@@ -229,7 +228,7 @@ for i = 1:length(massflow)
                     % pressure_inc(i,j,k,m,n)
                     pressure_inc(i,j,k,m,n) = (2/D*fTP/RHO_f*G^2*(1+...
                         quality_p(i,j,k,m,n)*V_avg*RHO_f) + G^2*V_avg*...
-                        (pi*D*q_flux)/(w*H_fv) + Grav*sin(THETA)/(1/RHO_f+... % ERROR: G is not g
+                        (pi*D*q_flux)/(w*H_fv) + Grav*sind(THETA)/(1/RHO_f+... % ERROR: G is not g
                         quality_p(i,j,k,m,n)*V_avg))*(z_increment);
                 end
                 pressure_drop(i,j,k,m) = sum(pressure_inc(i,j,k,m,:));
@@ -254,10 +253,14 @@ normalized_h_inv = (h_inverse - h_inv_min)./(h_inv_max - h_inv_min);
 
 distance = sqrt(normalized_pressure.*normalized_pressure + normalized_h_inv.*normalized_h_inv);
 
-[distance_min, distance_min_index] = min(distance(:));
+% Removing the : from distance(_) below ___
+[distance_min, distance_min_index] = min(distance);
 [h_max, h_max_index] = max(h); % Potentially unnecessary line
 
 % Enbsure that this is the proper use of these functions
+% Yes, all of these indices should ultimately be 4D arrays (such that I can
+% get optimizations for every possible input), but I will need to process
+% them further when I am not using all of these input parameters
 [a,b,c,d] = ind2sub(size(distance), distance_min_index); % Dont necessarily be concerned about getting different indices for this, they should be different
 [a_h,b_h,c_h,d_h] = ind2sub(size(h), h_max_index);
 [a_p,b_p,c_p,d_p] = ind2sub(size(pressure_drop), pressure_min_index);
@@ -278,12 +281,31 @@ angle_min_pressure = pipe_angle(b_p);
 diameter_min_pressure = inlet_diameter(c_p);
 heat_min_pressure = heat_input(d_p);
 
+%%
+% Something is wrong with this variable
+% exit_quality = quality(1,reshape(distance_min_index(1,:,1,:),4,[]),1,:,250);
+
+%%
+% For heat_input = linspace(100, 1000000, 30);
+plot(heat_input, angle_utopia);
+xlabel('Heat Input (kW)');
+ylabel('Utopia Angle (degrees)');
+%% 
+% For heat_input = linspace(902300, 902400, 100);
+plot(heat_input, angle_utopia);
+xticks(linspace(902300,902400,6));
+xticklabels({'902.30', '902.32', '902.34', '902.36', '902.38', '902.40'});
+xlabel('Heat Input (kW)');
+ylabel('Utopia Angle (degrees)');
+
+%% Graphs
 % Plots that I want to do
 % Quality as a function of axial distance
 % Exit quality as a function of pipe angle
 % Change in quality for each pipe increment (for a given angle)
 
 % Figure out what this is doing and find a cleaner way to do it
+figure;
 plot(z, reshape(quality(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
 hold on;
 plot(z, reshape(quality(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
@@ -292,7 +314,6 @@ str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
 str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
 str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
 legend(str1, str2, str3, 'Location', 'northwest');
-% title('');
 xlabel('Axial Distance Along Pipe (m)');
 ylabel('Flow Quality');
 
