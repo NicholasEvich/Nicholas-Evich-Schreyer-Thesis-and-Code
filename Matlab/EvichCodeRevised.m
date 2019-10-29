@@ -28,8 +28,8 @@ MU_f = 0.0002814;
 MU_v = 11.97E-06;
 % Prandlt number for saturated water at 373.15 K (Dimensionless)
 PR = 1.76;
-% Average specific volume of saturated water/steam at 373.15 K (m^3/kg)
-V_avg = 1 / RHO_v - 1 / RHO_f;
+% Difference between specific volumes of saturated water/steam at 373.15 K (m^3/kg)
+V_diff = 1 / RHO_v - 1 / RHO_f;
 % Surface tension of saturated water at 373.15 K (N/m)
 SIGMA = 58.9e-03;
 % Multiplication factor for calculating heat transfer coefficient for water
@@ -43,11 +43,11 @@ THETA = 0;
 massflow = 0.5;
 % Inlet diameter satisfying confinement number (m)
 % inlet_diameter = linspace(0.006,0.1, 10);
-inlet_diameter = 0.01;
+inlet_diameter = 0.1;
 % Pipe angle in degrees
 pipe_angle = linspace(0,45,100); 
-heat_input = linspace(902300, 902400, 100);
-% heat_input = 500;
+% heat_input = linspace(0,500,30);
+heat_input = 500000;
 %
 z = linspace(0, L, 250); % Consider making this an odd number so I get the middle section
 % or use some other mathematical method to reduce error
@@ -64,8 +64,8 @@ alpha = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), leng
 diam_z = zeros(length(inlet_diameter),length(pipe_angle), length(z));
 surface_area = zeros(length(inlet_diameter), length(pipe_angle));
 cross_area = zeros(length(inlet_diameter), length(pipe_angle), length(z));
-% h_inc = zeros(length(z));
-h_inc = linspace(0, 0, 250); % Why is this necessary
+% h_inc = linspace(0,0,250); % For 1-D
+h_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 % pressure_inc = linspace(0, 0, 249); % Why is this necessary
 pressure_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
@@ -166,7 +166,7 @@ for i = 1:length(massflow)
                     else % Figure out where this equation comes from and make s
                         % sure that the order of operations is working
                         % correctly
-                        FFr = 2.63*((w/(A*RHO_f))^2/(G*D))^0.3;
+                        FFr = 2.63*((w/(A*RHO_f))^2/(Grav*D))^0.3;
                     end
                     
                     % Heat transfer coefficient increment eq 1 (check
@@ -183,9 +183,11 @@ for i = 1:length(massflow)
                         *FFr+667.2*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
                         quality_h(i,j,k,m,n))^0.8*G_sf);
                     if h_inc1 >= h_inc2 
-                        h_inc(n) = h_inc1;
+                        h_inc(i,j,k,m,n) = h_inc1;
+                        % h_inc(n) = h_inc1; % For 1-D
                     else
-                        h_inc(n) = h_inc2;
+                        h_inc(i,j,k,m,n) = h_inc2;
+                        % h_inc(n) = h_inc2; % for 1-D
                     end
                     
                     % Why is this here?
@@ -193,7 +195,8 @@ for i = 1:length(massflow)
                         % confinement number limit
                         h(i,j,k,m) = NaN;
                     else
-                        h(i,j,k,m) = mean(h_inc);
+                        h(i,j,k,m) = mean(h_inc(i,j,k,m,:));
+                        % h(i,j,k,m) = mean(h_inc); % for 1-D
                     end
                     
                     %-----------------------------------------------------
@@ -227,9 +230,9 @@ for i = 1:length(massflow)
                     fTP = ffo*(MU_bar/MU_f)^N; 
                     % pressure_inc(i,j,k,m,n)
                     pressure_inc(i,j,k,m,n) = (2/D*fTP/RHO_f*G^2*(1+...
-                        quality_p(i,j,k,m,n)*V_avg*RHO_f) + G^2*V_avg*...
+                        quality_p(i,j,k,m,n)*V_diff*RHO_f) + G^2*V_diff*...
                         (pi*D*q_flux)/(w*H_fv) + Grav*sind(THETA)/(1/RHO_f+... % ERROR: G is not g
-                        quality_p(i,j,k,m,n)*V_avg))*(z_increment);
+                        quality_p(i,j,k,m,n)*V_diff))*(z_increment);
                 end
                 pressure_drop(i,j,k,m) = sum(pressure_inc(i,j,k,m,:));
                 % pressure_drop(i,j,k,m) = sum(pressure_inc);
@@ -281,103 +284,7 @@ angle_min_pressure = pipe_angle(b_p);
 diameter_min_pressure = inlet_diameter(c_p);
 heat_min_pressure = heat_input(d_p);
 
-%%
+%
 % Something is wrong with this variable
 % exit_quality = quality(1,reshape(distance_min_index(1,:,1,:),4,[]),1,:,250);
 
-%%
-% For heat_input = linspace(100, 1000000, 30);
-plot(heat_input, angle_utopia);
-xlabel('Heat Input (kW)');
-ylabel('Utopia Angle (degrees)');
-%% 
-% For heat_input = linspace(902300, 902400, 100);
-plot(heat_input, angle_utopia);
-xticks(linspace(902300,902400,6));
-xticklabels({'902.30', '902.32', '902.34', '902.36', '902.38', '902.40'});
-xlabel('Heat Input (kW)');
-ylabel('Utopia Angle (degrees)');
-
-%% Graphs
-% Plots that I want to do
-% Quality as a function of axial distance
-% Exit quality as a function of pipe angle
-% Change in quality for each pipe increment (for a given angle)
-
-% Figure out what this is doing and find a cleaner way to do it
-figure;
-plot(z, reshape(quality(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-hold on;
-plot(z, reshape(quality(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-plot(z, reshape(quality(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
-str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
-str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
-legend(str1, str2, str3, 'Location', 'northwest');
-xlabel('Axial Distance Along Pipe (m)');
-ylabel('Flow Quality');
-
-figure;
-yyaxis left;
-plot(pipe_angle, pressure_drop);
-ylabel('Total Pressure Drop (Pa)');
-yyaxis right;
-semilogy(pipe_angle, pressure_drop);
-xlabel('Pipe Angle (degrees)');
-legend('Linear','Logarithmic');
-
-figure;
-plot(z(2:250), reshape(pressure_inc(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-hold on;
-plot(z(2:250), reshape(pressure_inc(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-plot(z(2:250), reshape(pressure_inc(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
-str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
-str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
-legend(str1, str2, str3, 'location', 'northwest');
-% title('');
-xlabel('Axial Distance Along Pipe (m)');
-ylabel('Incremental Pressure Drop (Pa)');
-
-% Logarithmic pressure drop
-figure;
-semilogy(z(2:250), reshape(pressure_inc(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-hold on;
-semilogy(z(2:250), reshape(pressure_inc(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-semilogy(z(2:250), reshape(pressure_inc(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
-str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
-str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
-str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
-legend(str1, str2, str3, 'location', 'northwest');
-% title('');
-xlabel('Axial Distance Along Pipe (m)');
-ylabel('Incremental Pressure Drop (Pa)');
-
-% Linear Cumulative Pressure Drop
-figure;
-plot(z(2:250), cumsum(reshape(pressure_inc(1,b,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
-hold on;
-plot(z(2:250), cumsum(reshape(pressure_inc(1,b_h,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
-plot(z(2:250), cumsum(reshape(pressure_inc(1,b_p,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
-str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
-str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
-str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
-legend(str1, str2, str3, 'location', 'northwest');
-% title('');
-xlabel('Axial Distance Along Pipe (m)');
-ylabel('Cumulative Pressure Drop (Pa)');
-
-% Logarithmic Cumulative Pressure Drop
-
-figure;
-semilogy(z(2:250), cumsum(reshape(pressure_inc(1,b,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
-hold on;
-semilogy(z(2:250), cumsum(reshape(pressure_inc(1,b_h,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
-semilogy(z(2:250), cumsum(reshape(pressure_inc(1,b_p,1,1,:), 1, []))); % massflow, utopia angle, inlet diam, heat, every z increment
-str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
-str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
-str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
-legend(str1, str2, str3, 'location', 'northwest');
-% title('');
-xlabel('Axial Distance Along Pipe (m)');
-ylabel('Cumulative Pressure Drop (Pa)');
