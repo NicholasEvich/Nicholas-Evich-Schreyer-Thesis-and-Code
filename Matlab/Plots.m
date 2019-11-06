@@ -1,8 +1,9 @@
 %%
 % For heat_input = linspace(100, 1000000, 30);
 plot(heat_input, angle_utopia);
-xlabel('Heat Input (kW)');
+xlabel('Heat Input (W)');
 ylabel('Utopia Angle (degrees)');
+title('10/28/19: 100 angles constrained between 2 and 3 degrees');
 %% 
 % For heat_input = linspace(902300, 902400, 100);
 plot(heat_input, angle_utopia);
@@ -135,6 +136,7 @@ str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
 legend(str1, str2, str3, 'location', 'northwest');
 xlabel('Axial Distance Along Pipe (m)');
 ylabel('Incremental Heat Transfer Coefficient');
+title('h inc');
 
 figure;
 semilogy(z, reshape(h_inc(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
@@ -147,6 +149,61 @@ str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
 legend(str1, str2, str3, 'location', 'northwest');
 xlabel('Axial Distance Along Pipe (m)');
 ylabel('Incremental Heat Transfer Coefficient');
+title('h inc');
+
+figure;
+plot(z, reshape(h_inc1(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+plot(z, reshape(h_inc1(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+plot(z, reshape(h_inc1(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Incremental Heat Transfer Coefficient');
+title('h inc1');
+
+figure;
+plot(z, reshape(h_inc2(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+plot(z, reshape(h_inc2(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+plot(z, reshape(h_inc2(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Incremental Heat Transfer Coefficient');
+title('h inc2');
+
+%% Plotting hsp and Froude number (FFr) vs axial distance for the optimization angles
+% to determine if they are affecting the value of the heat transfer
+% coefficient significantly
+
+figure;
+semilogy(z, reshape(hsp(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+semilogy(z, reshape(hsp(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+semilogy(z, reshape(hsp(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('hsp');
+
+figure;
+semilogy(z, reshape(FFr(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+semilogy(z, reshape(FFr(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+semilogy(z, reshape(FFr(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Froude Numbeer (FFr)');
 
 %% Plotting heat transfer coefficient and pressure drop vs pipe angle on the same plots
 [h_min, h_min_index] = min(h);

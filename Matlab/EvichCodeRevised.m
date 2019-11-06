@@ -43,9 +43,9 @@ THETA = 0;
 massflow = 0.5;
 % Inlet diameter satisfying confinement number (m)
 % inlet_diameter = linspace(0.006,0.1, 10);
-inlet_diameter = 0.1;
+inlet_diameter = 0.01;
 % Pipe angle in degrees
-pipe_angle = linspace(0,45,100); 
+pipe_angle = linspace(0, 45, 100); 
 % heat_input = linspace(0,500,30);
 heat_input = 500000;
 %
@@ -66,10 +66,15 @@ surface_area = zeros(length(inlet_diameter), length(pipe_angle));
 cross_area = zeros(length(inlet_diameter), length(pipe_angle), length(z));
 % h_inc = linspace(0,0,250); % For 1-D
 h_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
+h_inc1 = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
+h_inc2 = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 % pressure_inc = linspace(0, 0, 249); % Why is this necessary
 pressure_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 pressure_drop = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
+hsp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
+FFr = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
+
 
 %
 % ----------------- Calculating diameter as a function of z for every pipe
@@ -133,7 +138,7 @@ for i = 1:length(massflow)
                         (1 - quality(i,j,k,m,n));
                     
                     if quality_h(i,j,k,m,n) > 0.8
-                       quality_h(i,j,k,m,n) = NaN; 
+                       error('Flow quality too high (greater than 0.8). Heat transfer coefficient calculations beyond this point are invalid');
                     end
                     
                     % ---------------------------------------------------
@@ -154,7 +159,7 @@ for i = 1:length(massflow)
                     
                     darcyf = (0.79*log(Re)-1.64)^2; % Calculating darcy friction factor
                     % for smooth pipes
-                    hsp = (K_f/D)*(darcyf/8*(Re - 1000)*PR)/...
+                    hsp(i,j,k,m,n) = (K_f/D)*(darcyf/8*(Re - 1000)*PR)/...
                         (1 + 12.7*(darcyf/8)^0.5*(PR^(2/3)-1)); % Calculating
                     % single phase convection coefficient
                     
@@ -162,38 +167,38 @@ for i = 1:length(massflow)
                     % (areal flow rate)
                     if (w/(A*RHO_f))^2/(Grav*D) >= 0.04 % Conditional statement to 
                         % determine FFr (what is FFr)
-                        FFr = 1;
+                        FFr(i,j,k,m,n) = 1;
                     else % Figure out where this equation comes from and make s
                         % sure that the order of operations is working
                         % correctly
-                        FFr = 2.63*((w/(A*RHO_f))^2/(Grav*D))^0.3;
+                        FFr(i,j,k,m,n) = 2.63*((w/(A*RHO_f))^2/(Grav*D))^0.3;
                     end
                     
                     % Heat transfer coefficient increment eq 1 (check
                     % OoO's)
-                    h_inc1 = hsp*(0.6683*(RHO_f/RHO_v)^0.1*...
+                    h_inc1(i,j,k,m,n) = hsp(i,j,k,m,n)*(0.6683*(RHO_f/RHO_v)^0.1*...
                         quality_h(i,j,k,m,n)^0.16*...
                         (1-quality_h(i,j,k,m,n))^0.64...
-                        *FFr+1058*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
+                        *FFr(i,j,k,m,n)+1058*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
                         quality_h(i,j,k,m,n))^0.8*G_sf);
                     % Heat transfer coefficient increment eq 2
-                    h_inc2 = hsp*(1.136*(RHO_f/RHO_v)^0.45*...
+                    h_inc2(i,j,k,m,n) = hsp(i,j,k,m,n)*(1.136*(RHO_f/RHO_v)^0.45*...
                         quality_h(i,j,k,m,n)^0.72*...
                         (1-quality_h(i,j,k,m,n))^0.08...
-                        *FFr+667.2*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
+                        *FFr(i,j,k,m,n)+667.2*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
                         quality_h(i,j,k,m,n))^0.8*G_sf);
-                    if h_inc1 >= h_inc2 
-                        h_inc(i,j,k,m,n) = h_inc1;
+                    if h_inc1(i,j,k,m,n) >= h_inc2(i,j,k,m,n) 
+                        h_inc(i,j,k,m,n) = h_inc1(i,j,k,m,n);
                         % h_inc(n) = h_inc1; % For 1-D
                     else
-                        h_inc(i,j,k,m,n) = h_inc2;
+                        h_inc(i,j,k,m,n) = h_inc2(i,j,k,m,n);
                         % h_inc(n) = h_inc2; % for 1-D
                     end
                     
                     % Why is this here?
                     if sqrt(SIGMA/(Grav*(RHO_f-RHO_v)))/D >= 0.5 % Setting
                         % confinement number limit
-                        h(i,j,k,m) = NaN;
+                        error('Confinement number too high (greater than 0.5). Heat transfer coefficient calculations beyond this point are invalid');
                     else
                         h(i,j,k,m) = mean(h_inc(i,j,k,m,:));
                         % h(i,j,k,m) = mean(h_inc); % for 1-D
