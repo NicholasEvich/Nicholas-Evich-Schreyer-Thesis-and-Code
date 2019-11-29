@@ -45,10 +45,13 @@ massflow = 0.5;
 % inlet_diameter = linspace(0.006,0.1, 10);
 inlet_diameter = 0.01;
 % Pipe angle in degrees
-pipe_angle = linspace(0, 45, 100); 
-% heat_input = linspace(0,500,30);
-heat_input = 500000;
-%
+pipe_angle = 0;
+% pipe_angle = linspace(0, 45, 100);
+heat_input = linspace(0, 500000, 10);
+% heat_input = 0;
+% heat_input = 500;
+% heat_input = 500000;
+
 z = linspace(0, L, 250); % Consider making this an odd number so I get the middle section
 % or use some other mathematical method to reduce error
 z_increment = z(2) - z(1);
@@ -73,9 +76,10 @@ h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(h
 pressure_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 pressure_drop = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 hsp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
+Froude = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 FFr = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 
-
+ppp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 %
 % ----------------- Calculating diameter as a function of z for every pipe
 % angle ahead of time (this way it is not done every time there is a new
@@ -157,7 +161,7 @@ for i = 1:length(massflow)
                             'increase diameter.'])
                     end
                     
-                    darcyf = (0.79*log(Re)-1.64)^2; % Calculating darcy friction factor
+                    darcyf = (0.79*log(Re)-1.64)^(-2); % Calculating darcy friction factor
                     % for smooth pipes
                     hsp(i,j,k,m,n) = (K_f/D)*(darcyf/8*(Re - 1000)*PR)/...
                         (1 + 12.7*(darcyf/8)^0.5*(PR^(2/3)-1)); % Calculating
@@ -165,28 +169,38 @@ for i = 1:length(massflow)
                     
                     % Ensure that this is supposed to be grav and not G
                     % (areal flow rate)
-                    if (w/(A*RHO_f))^2/(Grav*D) >= 0.04 % Conditional statement to 
+                    Froude(i,j,k,m,n) = (w/(A*RHO_f))^2/(Grav*D);
+                    if Froude(i,j,k,m,n) >= 0.04 % Conditional statement to 
                         % determine FFr (what is FFr)
                         FFr(i,j,k,m,n) = 1;
                     else % Figure out where this equation comes from and make s
                         % sure that the order of operations is working
                         % correctly
+                        % This additional calculation is unnecessary
                         FFr(i,j,k,m,n) = 2.63*((w/(A*RHO_f))^2/(Grav*D))^0.3;
                     end
                     
                     % Heat transfer coefficient increment eq 1 (check
                     % OoO's)
-                    h_inc1(i,j,k,m,n) = hsp(i,j,k,m,n)*(0.6683*(RHO_f/RHO_v)^0.1*...
-                        quality_h(i,j,k,m,n)^0.16*...
-                        (1-quality_h(i,j,k,m,n))^0.64...
-                        *FFr(i,j,k,m,n)+1058*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
-                        quality_h(i,j,k,m,n))^0.8*G_sf);
+%                   h_inc1(i,j,k,m,n) = hsp(i,j,k,m,n)*(0.6683*(RHO_f/RHO_v)^0.1*...
+%                         quality_h(i,j,k,m,n)^0.16*...
+%                         (1-quality_h(i,j,k,m,n))^0.64...
+%                         *FFr(i,j,k,m,n)+1058*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
+%                         quality_h(i,j,k,m,n))^0.8*G_sf);
+                    
+                    % Function routine for h_inc1
+                    h_inc1(i,j,k,m,n) = h_increment1(hsp(i,j,k,m,n), RHO_f, RHO_v, quality_h(i,j,k,m,n), FFr(i,j,k,m,n), q_flux, A, H_fv, w, G_sf);
+                    
                     % Heat transfer coefficient increment eq 2
-                    h_inc2(i,j,k,m,n) = hsp(i,j,k,m,n)*(1.136*(RHO_f/RHO_v)^0.45*...
-                        quality_h(i,j,k,m,n)^0.72*...
-                        (1-quality_h(i,j,k,m,n))^0.08...
-                        *FFr(i,j,k,m,n)+667.2*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
-                        quality_h(i,j,k,m,n))^0.8*G_sf);
+%                     h_inc2(i,j,k,m,n) = hsp(i,j,k,m,n)*(1.136*(RHO_f/RHO_v)^0.45*...
+%                         quality_h(i,j,k,m,n)^0.72*...
+%                         (1-quality_h(i,j,k,m,n))^0.08...
+%                         *FFr(i,j,k,m,n)+667.2*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
+%                         quality_h(i,j,k,m,n))^0.8*G_sf);
+                    
+                    % Function routine for h_inc2
+                    h_inc2(i,j,k,m,n) = h_increment2(hsp(i,j,k,m,n), RHO_f, RHO_v, quality_h(i,j,k,m,n), FFr(i,j,k,m,n), q_flux, A, H_fv, w, G_sf);
+                    
                     if h_inc1(i,j,k,m,n) >= h_inc2(i,j,k,m,n) 
                         h_inc(i,j,k,m,n) = h_inc1(i,j,k,m,n);
                         % h_inc(n) = h_inc1; % For 1-D
@@ -233,11 +247,19 @@ for i = 1:length(massflow)
                     MU_bar = quality_p(i,j,k,m,n)*MU_v...
                         + (1-quality_p(i,j,k,m,n))*MU_f;
                     fTP = ffo*(MU_bar/MU_f)^N; 
-                    % pressure_inc(i,j,k,m,n)
-                    pressure_inc(i,j,k,m,n) = (2/D*fTP/RHO_f*G^2*(1+...
-                        quality_p(i,j,k,m,n)*V_diff*RHO_f) + G^2*V_diff*...
-                        (pi*D*q_flux)/(w*H_fv) + Grav*sind(THETA)/(1/RHO_f+... % ERROR: G is not g
-                        quality_p(i,j,k,m,n)*V_diff))*(z_increment);
+                                        
+                    KE = KE_PhaseChange(G, H_fv, 1/RHO_f, 1/RHO_v, V_diff, quality_p(i,j,k,m,n));
+                    dP_Fric = dP_Friction(D, fTP, G, 1/RHO_f, 1/RHO_v, quality_p(i,j,k,m,n));
+                    dP_Acc = dP_Acceleration(D, G, H_fv, q_flux, V_diff, w);
+                    dP_Grav = dP_Gravity(THETA, 1/RHO_f, V_diff, quality_p(i,j,k,m,n));
+%                     Compressibility = Compressibility(G, p_abs, quality_p(i,j,k,m,n));
+%                     Flashing = Flashing(G, H_fv, p_abs, V_diff, quality_p(i,j,k,m,n));
+                    pressure_inc(i,j,k,m,n) = z_increment*((KE*dP_Fric + dP_Acc + dP_Grav)/KE);
+                    
+%                     pressure_inc(i,j,k,m,n) = (2/D*fTP/RHO_f*G^2*(1+...
+%                         quality_p(i,j,k,m,n)*V_diff*RHO_f) + G^2*V_diff*...
+%                         (pi*D*q_flux)/(w*H_fv) + Grav*sind(THETA)/(1/RHO_f+... % ERROR: G is not g
+%                         quality_p(i,j,k,m,n)*V_diff))*(z_increment);
                 end
                 pressure_drop(i,j,k,m) = sum(pressure_inc(i,j,k,m,:));
                 % pressure_drop(i,j,k,m) = sum(pressure_inc);

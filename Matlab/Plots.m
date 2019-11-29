@@ -194,6 +194,18 @@ xlabel('Axial Distance Along Pipe (m)');
 ylabel('hsp');
 
 figure;
+semilogy(z, reshape(Froude(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+hold on;
+semilogy(z, reshape(Froude(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+semilogy(z, reshape(Froude(1,b_p,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
+str1 = sprintf(['Utopia Point (%.2f' char(176) ')'], angle_utopia);
+str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
+str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Froude Number (Fr)');
+
+figure;
 semilogy(z, reshape(FFr(1,b,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
 hold on;
 semilogy(z, reshape(FFr(1,b_h,1,1,:), 1, [])); % massflow, utopia angle, inlet diam, heat, every z increment
@@ -203,7 +215,52 @@ str2 = sprintf(['Maximum h (%.2f' char(176) ')'], angle_max_h);
 str3 = sprintf(['Minimum Delta P (%.2f' char(176) ')'], angle_min_pressure);
 legend(str1, str2, str3, 'location', 'northwest');
 xlabel('Axial Distance Along Pipe (m)');
-ylabel('Froude Numbeer (FFr)');
+ylabel('Confinement Number (FFr)');
+
+%% Plotting h_inc, h_inc1, and h_inc2 on the same graph for each optimization angle
+
+titlestr_utopia = sprintf('Utopia Angle for Heat Input %3.0f W', heat_input);
+titlestr_h = sprintf('Max Heat Transfer Coefficient for Heat Input %3.0f W', heat_input);
+titlestr_p = sprintf('Minimum Pressure Drop for Heat Input %3.0f W', heat_input);
+
+figure;
+plot(z, reshape(h_inc1(1,b,1,1,:), 1, [])); 
+hold on;
+plot(z, reshape(h_inc2(1,b,1,1,:), 1, []));
+plot(z, reshape(h_inc(1,b,1,1,:), 1, []));
+str1 = sprintf('h Increment 1');
+str2 = sprintf('h Increment 2');
+str3 = sprintf('h Increment used');
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Incremental Heat Transfer Coefficient');
+title(titlestr_utopia);
+
+figure;
+plot(z, reshape(h_inc1(1,b_h,1,1,:), 1, [])); 
+hold on;
+plot(z, reshape(h_inc2(1,b_h,1,1,:), 1, []));
+plot(z, reshape(h_inc(1,b_h,1,1,:), 1, []));
+str1 = sprintf('h Increment 1');
+str2 = sprintf('h Increment 2');
+str3 = sprintf('h Increment used');
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Incremental Heat Transfer Coefficient');
+title(titlestr_h);
+
+figure;
+plot(z, reshape(h_inc1(1,b_p,1,1,:), 1, [])); 
+hold on;
+plot(z, reshape(h_inc2(1,b_p,1,1,:), 1, []));
+plot(z, reshape(h_inc(1,b_p,1,1,:), 1, []));
+str1 = sprintf('h Increment 1');
+str2 = sprintf('h Increment 2');
+str3 = sprintf('h Increment used');
+legend(str1, str2, str3, 'location', 'northwest');
+xlabel('Axial Distance Along Pipe (m)');
+ylabel('Incremental Heat Transfer Coefficient');
+title(titlestr_p);
 
 %% Plotting heat transfer coefficient and pressure drop vs pipe angle on the same plots
 [h_min, h_min_index] = min(h);
