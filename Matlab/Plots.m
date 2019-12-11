@@ -276,3 +276,39 @@ xlabel('Pipe Expansion Angle');
 ylabel('Normalized Output Parameter');
 title('10/24/19: 500 W, 0.1 m, 0.5 kg/s');
 legend('Heat Transfer Coefficient','Inverse Heat Transfer Coefficient','Pressure Drop');
+
+%% Plots for meeting with dr. frecker (heat input)
+figure;
+plot(0.001*heat_input, angle_utopia);
+xlabel('Heat Input (kW)');
+ylabel('Utopia Angle (degrees)');
+
+a = 1; % Weight for pressure drop
+b = 1e9; % Weight for inverse heat transfer coefficient
+
+weightedOutput = a.*pressure_drop + b.*h_inverse;
+[minOutput, indices] = min(weightedOutput(1,:,1,:));
+figure;
+plot(0.001*heat_input, pipe_angle(indices(1,1,1,:)));
+xlabel('Heat Input (kW)');
+ylabel('Utopia Angle (degrees)');
+
+%% Dr. Frecker meeting part 2 (inlet diameter)
+% This one is not really working as expected
+figure;
+plot(100*inlet_diameter, angle_utopia);
+xlim([0.6 10]);
+xlabel('Inlet Diameter (cm)');
+ylabel('Utopia Angle (degrees)');
+
+a = 1;
+b = 1e5;
+
+weightedOutput = a.*pressure_drop + b.*h_inverse;
+[minOutput2, indices] = min(weightedOutput);
+figure;
+plot(100*inlet_diameter, pipe_angle(indices(1,1,:,1)));
+xlim([0.6 10]);
+xlabel('Inlet Diameter (cm)');
+ylabel('Utopia Angle (degrees)');
+

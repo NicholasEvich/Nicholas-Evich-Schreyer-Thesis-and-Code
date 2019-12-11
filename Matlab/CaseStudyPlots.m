@@ -9,12 +9,12 @@ ylabel('Instantaneous Flow Quality');
 % Pressure Drop
 %   Incremental Pressure Drop
 figure;
-plot(z(2:250), reshape(pressure_inc(1,1,1,1,:), 1, []));
+plot(z(2:length(z)), reshape(pressure_inc(1,1,1,1,:), 1, []));
 xlabel('Axial Distance (m)');
 ylabel('Incremental Pressure Drop (Pa)');
 %   Cumulative Pressure Drop
 figure;
-plot(z(2:250), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
+plot(z(2:length(z)), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
 xlabel('Axial Distance (m)');
 ylabel('Cumulative Pressure Drop (Pa)');
 
@@ -38,12 +38,12 @@ ylabel('Instantaneous Flow Quality');
 % Pressure Drop
 %   Incremental Pressure Drop
 figure;
-plot(z(2:250), reshape(pressure_inc(1,1,1,1,:), 1, []));
+plot(z(2:length(z)), reshape(pressure_inc(1,1,1,1,:), 1, []));
 xlabel('Axial Distance (m)');
 ylabel('Incremental Pressure Drop (Pa)');
 %   Cumulative Pressure Drop
 figure;
-plot(z(2:250), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
+plot(z(2:length(z)), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
 xlabel('Axial Distance (m)');
 ylabel('Cumulative Pressure Drop (Pa)');
 
@@ -53,6 +53,12 @@ figure;
 plot(z, reshape(h_inc(1,1,1,1,:), 1, []));
 xlabel('Axial Distance (m)');
 ylabel('Incremental Heat Transfer Coefficient');
+
+% Void Fraction
+figure;
+plot(z, reshape(alpha(1,1,1,1,:), 1, []));
+xlabel('Axial Distance (m)');
+ylabel('Void Fraction');
 
 %% High Heat Input
 
@@ -65,12 +71,12 @@ ylabel('Instantaneous Flow Quality');
 % Pressure Drop
 %   Incremental Pressure Drop
 figure;
-plot(z(2:250), reshape(pressure_inc(1,1,1,1,:), 1, []));
+plot(z(2:length(z)), reshape(pressure_inc(1,1,1,1,:), 1, []));
 xlabel('Axial Distance (m)');
 ylabel('Incremental Pressure Drop (Pa)');
 %   Cumulative Pressure Drop
 figure;
-plot(z(2:250), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
+plot(z(2:length(z)), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
 xlabel('Axial Distance (m)');
 ylabel('Cumulative Pressure Drop (Pa)');
 
@@ -80,6 +86,14 @@ figure;
 plot(z, reshape(h_inc(1,1,1,1,:), 1, []));
 xlabel('Axial Distance (m)');
 ylabel('Incremental Heat Transfer Coefficient');
+
+% Void Fraction
+figure;
+plot(z, reshape(alpha(1,1,1,1,:), 1, []));
+hold on;
+plot(z, reshape(quality(1,1,1,1,:), 1, []));
+xlabel('Axial Distance (m)');
+ylabel('Void Fraction');
 
 %% Trends Across Heat Input
 
@@ -101,19 +115,19 @@ ylabel('Exit Flow Quality');
 % Pressure Drop
 %   Incremental Pressure Drop
 figure;
-plot(z(2:250), reshape(pressure_inc(1,1,1,1,:), 1, []));
+plot(z(2:length(z)), reshape(pressure_inc(1,1,1,1,:), 1, []));
 hold on;
 for numHeat = 2:length(heat_input)
-    plot(z(2:250), reshape(pressure_inc(1,1,1,numHeat,:), 1, []));
+    plot(z(2:length(z)), reshape(pressure_inc(1,1,1,numHeat,:), 1, []));
 end
 xlabel('Axial Distance (m)');
 ylabel('Incremental Pressure Drop (Pa)');
 %   Cumulative Pressure Drop
 figure;
-plot(z(2:250), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
+plot(z(2:length(z)), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
 hold on;
 for numHeat = 2:length(heat_input)
-    plot(z(2:250), cumsum(reshape(pressure_inc(1,1,1,numHeat,:), 1, [])));
+    plot(z(2:length(z)), cumsum(reshape(pressure_inc(1,1,1,numHeat,:), 1, [])));
 end
 xlabel('Axial Distance (m)');
 ylabel('Cumulative Pressure Drop (Pa)');
@@ -135,12 +149,36 @@ ylabel('Overall Heat Transfer Coefficient');
 
 % Flow Quality
 %   There should be no real trend here
+plot(z, reshape(quality(1,5,1,1,:), 1, []));
+xlabel('Axial Distance (m)');
+ylabel('Instantaneous Flow Quality');
+
 % Pressure Drop
 %   Incremental Pressure Drop
+figure;
+semilogy(z(2:length(z)), reshape(pressure_inc(1,1,1,1,:), 1, []));
+hold on;
+for numAngle = 2:length(pipe_angle)
+    semilogy(z(2:length(z)), reshape(pressure_inc(1,numAngle,1,1,:), 1, []));
+end
+xlabel('Axial Distance (m)');
+ylabel('Incremental Pressure Drop (Pa)');
 %   Cumulative Pressure Drop
-%   Total Pressure Drop
+figure;
+semilogy(z(2:length(z)), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
+hold on;
+for numAngle = 2:length(pipe_angle)
+    semilogy(z(2:length(z)), cumsum(reshape(pressure_inc(1,numAngle,1,1,:), 1, [])));
+end
+xlabel('Axial Distance (m)');
+ylabel('Cumulative Pressure Drop (Pa)');
+
 % Heat Transfer Coefficient
 %   There should be no real trend here
+figure;
+plot(z, reshape(h_inc(1,5,1,1,:), 1, []));
+xlabel('Axial Distance (m)');
+ylabel('Incremental Heat Transfer Coefficient');
 
 %% -----------------Angled Pipe, Variable Heat Input----------------------
 

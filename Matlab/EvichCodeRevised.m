@@ -9,6 +9,7 @@ L = 1;
 % Gravitational constant (m/s^2)
 Grav = 9.81;
 % Inlet temperature of fluid (K)
+% T_inlet = 373.15;
 T_inlet = 373.15;
 % Saturation temperature of water (K)
 T_sat = 373.15;
@@ -37,28 +38,33 @@ G_sf = 1;
 % Vertical incline of pipe
 THETA = 0;
 
+% Initial pressure (inlet)
+P0 = 101330; % Pascals
+
 % --------------- Independent variables -------------------------
 % Mass flow rate (kg/s)
 % massflow = linspace(0.5,1.5,10);
 massflow = 0.5;
 % Inlet diameter satisfying confinement number (m)
-% inlet_diameter = linspace(0.006,0.1, 10);
+% inlet_diameter = linspace(0.006,0.1, 30);
 inlet_diameter = 0.01;
 % Pipe angle in degrees
-pipe_angle = 0;
-% pipe_angle = linspace(0, 45, 100);
-heat_input = linspace(0, 500000, 10);
-% heat_input = 0;
+% pipe_angle = 0;
+% pipe_angle = 0:5:45;
+pipe_angle = linspace(0, 45, 100);
+heat_input = 500;
+% heat_input = 5000;
 % heat_input = 500;
 % heat_input = 500000;
 
 z = linspace(0, L, 250); % Consider making this an odd number so I get the middle section
 % or use some other mathematical method to reduce error
-z_increment = z(2) - z(1);
+dz = z(2) - z(1);
 
 % ------------ Preallocation of memory for arrays ---------------
 
 quality = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
+quality_e = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 quality_h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 quality_p = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 alpha = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
@@ -78,13 +84,23 @@ pressure_drop = zeros(length(massflow), length(pipe_angle), length(inlet_diamete
 hsp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 Froude = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 FFr = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
-
+pressure_abs = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 ppp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
+temp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
+temp(:,:,:,:,1) = T_inlet;
 %
 % ----------------- Calculating diameter as a function of z for every pipe
 % angle ahead of time (this way it is not done every time there is a new
 % heat input, inlet diameter, or massflow)
 %       This loop also avoids any and all conditionals (saves time)
+pressure_abs(:,:,:,:,1) = P0;
+
+% Stuff added 11/24/19 for debugging
+Compress = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
+Flash = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
+KE = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
+
+% ----------------------------------
 
 %Do = 0.1;
 for i = 1:length(inlet_diameter)
@@ -123,23 +139,36 @@ for i = 1:length(massflow)
                     D = diam_z(k,j,n);
                     A = cross_area(k,j,n); % Same as above
                     
+                    if temp(i,j,k,m,n-1) >= T_sat && quality_e(i,j,k,m,n-1) < 1
+                        temp(i,j,k,m,n) = T_sat;
+                    elseif temp(i,j,k,m,n-1) < T_sat
+                        deltaT = (q_flux*D*pi*dz)/(C_pf*w);
+                        temp(i,j,k,m,n) = temp(i,j,k,m,n-1) + deltaT;
+                    end
+                    
                     %Xe(count1, count2, count3, count4, count5) = ...
                     %    (-Cp_f*(Tsat-Ti))/hfg + (pi*D*q*z(count5))/(W*hfg);
                     % In Nick's code, his quality calculations are the same
                     % (I think), yet he gets different values for each one
                     % But, my regular (utopia) quality calcs are "correct"
-                    % Replace (z1 -z0) with a global z_increment constant
-                    quality(i,j,k,m,n) = (-C_pf*(T_sat - T_inlet))/H_fv + ...
+                    % Replace (z1 -z0) with a global dz constant
+                    quality_e(i,j,k,m,n) = (-C_pf*(T_sat - temp(i,j,k,m,n)))/H_fv + ...
                         (pi*D*q_flux*(z1 - z0))/(w*H_fv) + quality(i,j,k,m,n-1);
-                    quality_h(i,j,k,m,n) = quality(i,j,k,m,n); % Optimize this
-                    % These are the "correct" values for both arrays
                     
-                    if quality(i,j,k,m,n) > 1
+                    if quality_e(i,j,k,m,n) >= 0 && quality_e(i,j,k,m,n) <= 1
+                        quality(i,j,k,m,n) = quality_e(i,j,k,m,n);
+                        
+                    elseif quality(i,j,k,m,n) > 1
                         quality(i,j,k,m,n) = 1;
                     end
                     
-                    alpha(i,j,k,m,n) = 1/(1 + RHO_v/RHO_f)*...
-                        (1 - quality(i,j,k,m,n));
+                    % 12/2/19: Determine if this is the right variable to
+                    % set this equal to
+                    quality_h(i,j,k,m,n) = quality(i,j,k,m,n); % Optimize this
+                    % These are the "correct" values for both arrays
+                    
+                    alpha(i,j,k,m,n) = 1/(1 + RHO_v/RHO_f*...
+                        (1 - quality(i,j,k,m,n))/quality(i,j,k,m,n));
                     
                     if quality_h(i,j,k,m,n) > 0.8
                        error('Flow quality too high (greater than 0.8). Heat transfer coefficient calculations beyond this point are invalid');
@@ -227,7 +256,7 @@ for i = 1:length(massflow)
                     D = diam_z(k,j,n); % This is the second time I am calculating these,
                     A = cross_area(k,j,n); % so precalculate them and store in an array
                     quality_p(i,j,k,m,n + 1) = (-C_pf*(T_sat - T_inlet))/H_fv + ...
-                        (pi*D*q_flux*(z_increment))/(w*H_fv) + quality_p(i,j,k,m,n);
+                        (pi*D*q_flux*(dz))/(w*H_fv) + quality_p(i,j,k,m,n);
                     
                     % Ideally, remove these conditionals and use some kind
                     % of array to store c and n values
@@ -248,18 +277,19 @@ for i = 1:length(massflow)
                         + (1-quality_p(i,j,k,m,n))*MU_f;
                     fTP = ffo*(MU_bar/MU_f)^N; 
                                         
-                    KE = KE_PhaseChange(G, H_fv, 1/RHO_f, 1/RHO_v, V_diff, quality_p(i,j,k,m,n));
+                    KE(i,j,k,m,n) = KE_PhaseChange(G, H_fv, 1/RHO_f, 1/RHO_v, V_diff, quality_p(i,j,k,m,n));
                     dP_Fric = dP_Friction(D, fTP, G, 1/RHO_f, 1/RHO_v, quality_p(i,j,k,m,n));
                     dP_Acc = dP_Acceleration(D, G, H_fv, q_flux, V_diff, w);
                     dP_Grav = dP_Gravity(THETA, 1/RHO_f, V_diff, quality_p(i,j,k,m,n));
-%                     Compressibility = Compressibility(G, p_abs, quality_p(i,j,k,m,n));
-%                     Flashing = Flashing(G, H_fv, p_abs, V_diff, quality_p(i,j,k,m,n));
-                    pressure_inc(i,j,k,m,n) = z_increment*((KE*dP_Fric + dP_Acc + dP_Grav)/KE);
+                    Compress(i,j,k,m,n) = 1e-06*Compressibility(G, pressure_abs(i,j,k,m,n), quality_p(i,j,k,m,n));
+                    Flash(i,j,k,m,n) = 1e-06*Flashing(G, H_fv, pressure_abs(i,j,k,m,n), V_diff, quality_p(i,j,k,m,n));
+                    pressure_inc(i,j,k,m,n) = dz*((KE(i,j,k,m,n)*dP_Fric + dP_Acc + dP_Grav)/(KE(i,j,k,m,n) ));
                     
 %                     pressure_inc(i,j,k,m,n) = (2/D*fTP/RHO_f*G^2*(1+...
 %                         quality_p(i,j,k,m,n)*V_diff*RHO_f) + G^2*V_diff*...
 %                         (pi*D*q_flux)/(w*H_fv) + Grav*sind(THETA)/(1/RHO_f+... % ERROR: G is not g
-%                         quality_p(i,j,k,m,n)*V_diff))*(z_increment);
+%                         quality_p(i,j,k,m,n)*V_diff))*(dz);
+                    pressure_abs(i,j,k,m,n+1) = pressure_abs(i,j,k,m,n) - pressure_inc(i,j,k,m,n);
                 end
                 pressure_drop(i,j,k,m) = sum(pressure_inc(i,j,k,m,:));
                 % pressure_drop(i,j,k,m) = sum(pressure_inc);
