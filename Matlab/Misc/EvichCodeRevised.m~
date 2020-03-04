@@ -1,9 +1,6 @@
-%
-
 clc, clear;
 
 % ---------------- Defining all constants-------------------------- %
-% --------- ALL CONSTANTS BEGIN WITH A CAPITAL LETTER ------------- %
 % Length of pipe (m)
 L = 1;
 % Gravitational constant (m/s^2)
@@ -45,20 +42,24 @@ P0 = 101330; % Pascals
 % Mass flow rate (kg/s)
 % massflow = linspace(0.5,1.5,10);
 massflow = 0.5;
+
 % Inlet diameter satisfying confinement number (m)
 % inlet_diameter = linspace(0.006,0.1, 30);
-inlet_diameter = 0.01;
+inlet_diameter = linspace(0.05,0.1,10);
+% inlet_diameter = 0.1;
 % Pipe angle in degrees
 % pipe_angle = 0;
 % pipe_angle = 0:5:45;
 pipe_angle = linspace(0, 45, 100);
-heat_input = 500;
+% pipe_angle = 0;
+% heat_input = 500000;
 % heat_input = 5000;
 % heat_input = 500;
 % heat_input = 500000;
+heat_input = linspace(500,5000, 10);
+% heat_input = 500;
 
-z = linspace(0, L, 250); % Consider making this an odd number so I get the middle section
-% or use some other mathematical method to reduce error
+z = linspace(0, L, 250); 
 dz = z(2) - z(1);
 
 % ------------ Preallocation of memory for arrays ---------------
@@ -68,19 +69,13 @@ quality_e = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), 
 quality_h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 quality_p = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 alpha = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
-% Order this one in a way that I can easily few the data when selecting the
-% variable
 diam_z = zeros(length(inlet_diameter),length(pipe_angle), length(z));
 surface_area = zeros(length(inlet_diameter), length(pipe_angle));
 cross_area = zeros(length(inlet_diameter), length(pipe_angle), length(z));
-% h_inc = linspace(0,0,250); % For 1-D
 h_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 h_inc1 = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 h_inc2 = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 h = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
-% pressure_inc = linspace(0, 0, 249); % Why is this necessary
-pressure_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
-pressure_drop = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 hsp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 Froude = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 FFr = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
@@ -88,21 +83,25 @@ pressure_abs = zeros(length(massflow), length(pipe_angle), length(inlet_diameter
 ppp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
 temp = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z));
 temp(:,:,:,:,1) = T_inlet;
-%
-% ----------------- Calculating diameter as a function of z for every pipe
-% angle ahead of time (this way it is not done every time there is a new
-% heat input, inlet diameter, or massflow)
-%       This loop also avoids any and all conditionals (saves time)
+
+% --------------------------------Pressure drop ----------------------
+% first one is for no compressibility and flashing effects, the second one
+% is. This is only for comparing the two.
+pressure_inc = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
+pressure_drop = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
+pressure_inc2 = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input), length(z) - 1);
+pressure_drop2 = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
+% --------------------------------------------------------------------------------------------------------------------
+
 pressure_abs(:,:,:,:,1) = P0;
 
-% Stuff added 11/24/19 for debugging
+% Added 11/24/19 for debugging
 Compress = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 Flash = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
 KE = zeros(length(massflow), length(pipe_angle), length(inlet_diameter), length(heat_input));
-
 % ----------------------------------
 
-%Do = 0.1;
+% Calculating cross-sectional and surface areas for each design
 for i = 1:length(inlet_diameter)
     for j = 1:length(pipe_angle)
         
@@ -127,17 +126,12 @@ for i = 1:length(massflow)
         for k = 1:length(inlet_diameter)
             d0 = inlet_diameter(k);
             for m = 1:length(heat_input)
-                q_flux = heat_input(m)/surface_area(k,j); % I may be able 
-                % change the order of these loops in order to avoid
-                % initializing this variable too many times
-                % Quality(i,j,k,m,1) is supposed to equal zero, so I dont
-                % need to change anything since I already initialized it to
-                % that
+                q_flux = heat_input(m)/surface_area(k,j); 
                 for n = 2:length(z)
-                    z1 = z(n); % For future versions, just use z(n) and z(n-1)
+                    z1 = z(n);
                     z0 = z(n-1);
                     D = diam_z(k,j,n);
-                    A = cross_area(k,j,n); % Same as above
+                    A = cross_area(k,j,n);
                     
                     if temp(i,j,k,m,n-1) >= T_sat && quality_e(i,j,k,m,n-1) < 1
                         temp(i,j,k,m,n) = T_sat;
@@ -148,10 +142,6 @@ for i = 1:length(massflow)
                     
                     %Xe(count1, count2, count3, count4, count5) = ...
                     %    (-Cp_f*(Tsat-Ti))/hfg + (pi*D*q*z(count5))/(W*hfg);
-                    % In Nick's code, his quality calculations are the same
-                    % (I think), yet he gets different values for each one
-                    % But, my regular (utopia) quality calcs are "correct"
-                    % Replace (z1 -z0) with a global dz constant
                     quality_e(i,j,k,m,n) = (-C_pf*(T_sat - temp(i,j,k,m,n)))/H_fv + ...
                         (pi*D*q_flux*(z1 - z0))/(w*H_fv) + quality(i,j,k,m,n-1);
                     
@@ -162,10 +152,7 @@ for i = 1:length(massflow)
                         quality(i,j,k,m,n) = 1;
                     end
                     
-                    % 12/2/19: Determine if this is the right variable to
-                    % set this equal to
-                    quality_h(i,j,k,m,n) = quality(i,j,k,m,n); % Optimize this
-                    % These are the "correct" values for both arrays
+                    quality_h(i,j,k,m,n) = quality(i,j,k,m,n); 
                     
                     alpha(i,j,k,m,n) = 1/(1 + RHO_v/RHO_f*...
                         (1 - quality(i,j,k,m,n))/quality(i,j,k,m,n));
@@ -173,9 +160,6 @@ for i = 1:length(massflow)
                     if quality_h(i,j,k,m,n) > 0.8
                        error('Flow quality too high (greater than 0.8). Heat transfer coefficient calculations beyond this point are invalid');
                     end
-                    
-                    % ---------------------------------------------------
-                    % Everything after this can use further optimization
                     
                     u = w/(RHO_f.*A); % Calculating velocity of single phase (m/s)
                     Re = RHO_f*u*D/MU_f; % Reynolds number at specific conditions
@@ -196,71 +180,47 @@ for i = 1:length(massflow)
                         (1 + 12.7*(darcyf/8)^0.5*(PR^(2/3)-1)); % Calculating
                     % single phase convection coefficient
                     
-                    % Ensure that this is supposed to be grav and not G
-                    % (areal flow rate)
                     Froude(i,j,k,m,n) = (w/(A*RHO_f))^2/(Grav*D);
-                    if Froude(i,j,k,m,n) >= 0.04 % Conditional statement to 
-                        % determine FFr (what is FFr)
+                    if Froude(i,j,k,m,n) >= 0.04 
                         FFr(i,j,k,m,n) = 1;
-                    else % Figure out where this equation comes from and make s
-                        % sure that the order of operations is working
-                        % correctly
-                        % This additional calculation is unnecessary
+                    else 
                         FFr(i,j,k,m,n) = 2.63*((w/(A*RHO_f))^2/(Grav*D))^0.3;
                     end
-                    
-                    % Heat transfer coefficient increment eq 1 (check
-                    % OoO's)
-%                   h_inc1(i,j,k,m,n) = hsp(i,j,k,m,n)*(0.6683*(RHO_f/RHO_v)^0.1*...
-%                         quality_h(i,j,k,m,n)^0.16*...
-%                         (1-quality_h(i,j,k,m,n))^0.64...
-%                         *FFr(i,j,k,m,n)+1058*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
-%                         quality_h(i,j,k,m,n))^0.8*G_sf);
-                    
+                                        
                     % Function routine for h_inc1
                     h_inc1(i,j,k,m,n) = h_increment1(hsp(i,j,k,m,n), RHO_f, RHO_v, quality_h(i,j,k,m,n), FFr(i,j,k,m,n), q_flux, A, H_fv, w, G_sf);
-                    
-                    % Heat transfer coefficient increment eq 2
-%                     h_inc2(i,j,k,m,n) = hsp(i,j,k,m,n)*(1.136*(RHO_f/RHO_v)^0.45*...
-%                         quality_h(i,j,k,m,n)^0.72*...
-%                         (1-quality_h(i,j,k,m,n))^0.08...
-%                         *FFr(i,j,k,m,n)+667.2*(q_flux*A/w/H_fv)^0.7*(1-... % Whats up with all these divisions?
-%                         quality_h(i,j,k,m,n))^0.8*G_sf);
                     
                     % Function routine for h_inc2
                     h_inc2(i,j,k,m,n) = h_increment2(hsp(i,j,k,m,n), RHO_f, RHO_v, quality_h(i,j,k,m,n), FFr(i,j,k,m,n), q_flux, A, H_fv, w, G_sf);
                     
                     if h_inc1(i,j,k,m,n) >= h_inc2(i,j,k,m,n) 
                         h_inc(i,j,k,m,n) = h_inc1(i,j,k,m,n);
-                        % h_inc(n) = h_inc1; % For 1-D
                     else
                         h_inc(i,j,k,m,n) = h_inc2(i,j,k,m,n);
-                        % h_inc(n) = h_inc2; % for 1-D
                     end
                     
-                    % Why is this here?
                     if sqrt(SIGMA/(Grav*(RHO_f-RHO_v)))/D >= 0.5 % Setting
                         % confinement number limit
                         error('Confinement number too high (greater than 0.5). Heat transfer coefficient calculations beyond this point are invalid');
                     else
                         h(i,j,k,m) = mean(h_inc(i,j,k,m,:));
-                        % h(i,j,k,m) = mean(h_inc); % for 1-D
                     end
                     
                     %-----------------------------------------------------
                 end
                 
                 for n = 1:(length(z) - 1)
-                    % z1 = z(n); % For future versions, just use z(n) and z(n-1)
-                    % z0 = z(n - 1);
-                    D = diam_z(k,j,n); % This is the second time I am calculating these,
-                    A = cross_area(k,j,n); % so precalculate them and store in an array
+                    D = diam_z(k,j,n);
+                    A = cross_area(k,j,n);
                     quality_p(i,j,k,m,n + 1) = (-C_pf*(T_sat - T_inlet))/H_fv + ...
                         (pi*D*q_flux*(dz))/(w*H_fv) + quality_p(i,j,k,m,n);
-                    
-                    % Ideally, remove these conditionals and use some kind
-                    % of array to store c and n values
+
                     G = w/A; %Calculating mass flow rate per area(kg/m^2*s)
+                    
+                    if G > 1e3
+                       error('Mass flux is too high. Decrease mass flow rate or increase pipe diameter. The error occurred with a mass flow rate of %3.4f kg/s and at a pipe diameter of %3.4f m', massflow, D); 
+                    end
+                    
                     if G*D/ MU_f < 2300 %Determining c and n constants for two-phase friction factor
                         c = 16;
                         N = 1; % Capital N to avoid mixing up loop index (don't use n in the future)
@@ -282,17 +242,14 @@ for i = 1:length(massflow)
                     dP_Acc = dP_Acceleration(D, G, H_fv, q_flux, V_diff, w);
                     dP_Grav = dP_Gravity(THETA, 1/RHO_f, V_diff, quality_p(i,j,k,m,n));
                     Compress(i,j,k,m,n) = 1e-06*Compressibility(G, pressure_abs(i,j,k,m,n), quality_p(i,j,k,m,n));
-                    Flash(i,j,k,m,n) = 1e-06*Flashing(G, H_fv, pressure_abs(i,j,k,m,n), V_diff, quality_p(i,j,k,m,n));
+                    Flash(i,j,k,m,n) = Flashing(G, H_fv, pressure_abs(i,j,k,m,n), V_diff, quality_p(i,j,k,m,n));
                     pressure_inc(i,j,k,m,n) = dz*((KE(i,j,k,m,n)*dP_Fric + dP_Acc + dP_Grav)/(KE(i,j,k,m,n) ));
-                    
-%                     pressure_inc(i,j,k,m,n) = (2/D*fTP/RHO_f*G^2*(1+...
-%                         quality_p(i,j,k,m,n)*V_diff*RHO_f) + G^2*V_diff*...
-%                         (pi*D*q_flux)/(w*H_fv) + Grav*sind(THETA)/(1/RHO_f+... % ERROR: G is not g
-%                         quality_p(i,j,k,m,n)*V_diff))*(dz);
+                    pressure_inc2(i,j,k,m,n) = dz*((KE(i,j,k,m,n)*dP_Fric + dP_Acc + dP_Grav)/(KE(i,j,k,m,n) + Compress(i,j,k,m,n) - Flash(i,j,k,m,n)));
+
                     pressure_abs(i,j,k,m,n+1) = pressure_abs(i,j,k,m,n) - pressure_inc(i,j,k,m,n);
                 end
                 pressure_drop(i,j,k,m) = sum(pressure_inc(i,j,k,m,:));
-                % pressure_drop(i,j,k,m) = sum(pressure_inc);
+                pressure_drop2(i,j,k,m) = sum(pressure_inc2(i,j,k,m,:));                
             end
         end
     end
@@ -315,17 +272,12 @@ distance = sqrt(normalized_pressure.*normalized_pressure + normalized_h_inv.*nor
 
 % Removing the : from distance(_) below ___
 [distance_min, distance_min_index] = min(distance);
-[h_max, h_max_index] = max(h); % Potentially unnecessary line
+[h_max, h_max_index] = max(h);
 
-% Enbsure that this is the proper use of these functions
-% Yes, all of these indices should ultimately be 4D arrays (such that I can
-% get optimizations for every possible input), but I will need to process
-% them further when I am not using all of these input parameters
-[a,b,c,d] = ind2sub(size(distance), distance_min_index); % Dont necessarily be concerned about getting different indices for this, they should be different
+[a,b,c,d] = ind2sub(size(distance), distance_min_index);
 [a_h,b_h,c_h,d_h] = ind2sub(size(h), h_max_index);
 [a_p,b_p,c_p,d_p] = ind2sub(size(pressure_drop), pressure_min_index);
 
-% Find a more efficient way to to these (use matrices)
 massflow_utopia = massflow(a);
 angle_utopia = pipe_angle(b);
 diameter_utopia = inlet_diameter(c);

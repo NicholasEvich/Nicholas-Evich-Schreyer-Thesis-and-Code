@@ -105,3 +105,65 @@ alpha = 1./(1 + rho_g./rho_f.*(1 - x)./x);
 
 
 plot(z, alpha);
+
+%% Quick observations for flashing terms (12/18/19)
+% also testing pressure drops with and without flashing terms
+figure;
+plot(z(2:250), reshape(Flash(1,1,1,1,:), 1, []));
+hold on;
+plot(z(2:250), reshape(Flash(1,10,1,1,:), 1, []));
+
+% Incremental Pressure Drop
+figure;
+plot(z(2:length(z)), reshape(pressure_inc(1,1,1,1,:), 1, []));
+hold on;
+plot(z(2:length(z)), reshape(pressure_inc2(1,1,1,1,:), 1, []));
+xlabel('Axial Distance (m)');
+ylabel('Incremental Pressure Drop (Pa)');
+legend('Neglecting C and F', 'Including C and F');
+t = sprintf('Heat input = %3.2f kW, Inlet diameter = %3.2f m, Pipe angle = %3.1f deg.', 0.001*heat_input(1), inlet_diameter(1), pipe_angle(1));
+title(t);
+
+% Cumulative Pressure Drop
+% figure;
+% plot(z(2:length(z)), cumsum(reshape(pressure_inc(1,1,1,1,:), 1, [])));
+% xlabel('Axial Distance (m)');
+% ylabel('Cumulative Pressure Drop (Pa)');
+
+% Total Pressure Drop
+
+%% Testing my assumptions about faulty normalizations for the heat transfer coefficient (12/18/19)
+
+% These plots are midleading and dont really tell me anything. Use
+% histograms instead
+figure;
+plot(normalized_h_inv, normalized_h_inv, 'r.', 'MarkerSize', 10);
+title('Normalized Inverse Heat Transfer Coefficient');
+
+figure;
+plot(h_inverse, h_inverse, 'r.', 'MarkerSize', 10);
+title('Inverse Heat Transfer Coefficient');
+
+figure;
+plot(normalized_pressure, normalized_pressure, 'r.', 'MarkerSize', 10);
+title('Normalized Pressure Drop');
+
+% Plot regular pressure drop vs. regular pressure drop
+
+figure;
+plot(distance, distance, 'r.', 'MarkerSize', 10);
+title('Distance');
+
+%% (12/18/19)
+% Histograms for the output data
+% subplot(1,2);
+[n, xout] = hist(pressure_drop);
+bar(xout, n, 1);
+% hold on;
+% [n2, xout2] = hist(normalized_h_inv);
+% bar(xout2, n2, 1);
+xlabel('Pressure Drop');
+% ylim([0 20]);
+ylabel('Percentage of Occurences');
+t = sprintf('Heat input = %3.2f kW, Inlet diameter = %3.2f m, Pipe angle = %3.1f deg.', 0.001*heat_input(1), inlet_diameter(1), pipe_angle(1));
+title(t);

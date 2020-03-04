@@ -28,7 +28,14 @@ classdef HEM < SaturatedWater
         
         % This function call can definitely be optimized: have a function
         % for calculating the friction factor, etc.
+        % Passing both G and d to this function seems like an odd thing to
+        % do... not sure if passing A would be better though
         function total_drop = dPdz(obj, theta, G, d, fricFac, qflux, w)
+            
+            if G > 1e3
+               error('Mass flux too high. Decrease mass flow rate or increase channel diameter');
+            end
+               
             KE = obj.KE_PhaseChange(G);
             G = obj.dP_gravity(theta);
             Fr = obj.dP_friction(d, fricFac, G);

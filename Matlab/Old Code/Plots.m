@@ -312,3 +312,48 @@ xlim([0.6 10]);
 xlabel('Inlet Diameter (cm)');
 ylabel('Utopia Angle (degrees)');
 
+%% 1/5/19 Pareto Plots for Paper and Dr. Rau
+
+norm_p_1d = reshape(normalized_pressure, 1, []);
+norm_h_1d = reshape(normalized_h_inv, 1, []);
+scatter(norm_p_1d, norm_h_1d);
+hold on;
+% scatter(normalized_pressure(a,b,c,d), normalized_h_inv(a,b,c,d), 1000, 'r.')
+xlabel('Normalized \DeltaP');
+ylabel('Normalized Inverse Heat Transfer Coefficient');
+set(gca,'FontSize',12)
+
+%% 1/7/19 3D plot of various variables and utopia angle
+
+[mind, mindi] = min(distance(:,:,:,:));
+mind2d = reshape(mind, length(inlet_diameter), length(heat_input));
+mindi2d = reshape(mindi, length(inlet_diameter), length(heat_input));
+
+angles = pipe_angle(mindi2d);
+
+figure;
+surf(100.*inlet_diameter, heat_input./1000, angles'); % try switching the order of these instead of transposing
+% Why did I need to transpose this matrix to get the trends I "expected"?
+% Are my optimizations completely off? Is heat input the one causing the 
+xlabel('Inlet Diameter (cm)');
+ylabel('Heat Input (kW)');
+zlabel('Utopia Angle (degrees)');
+set(gca,'FontSize',12)
+
+%% 
+
+[mind, mindi] = min(distance);
+mind2d = reshape(mind, length(inlet_diameter), length(massflow));
+mindi2d = reshape(mindi, length(inlet_diameter), length(massflow));
+
+angles = pipe_angle(mindi2d);
+
+figure;
+surf(100.*inlet_diameter, massflow, angles');
+% Why did I need to transpose this matrix to get the trends I "expected"?
+% Are my optimizations completely off? Is heat input the one causing the 
+xlabel('Inlet Diameter (cm)');
+ylabel('Mass Flow Rate (kg/s)');
+zlabel('Utopia Angle (degrees)');
+set(gca,'FontSize',12)
+
