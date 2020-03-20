@@ -1,0 +1,36 @@
+\contentsline {chapter}{List of Figures}{v}% 
+\contentsline {chapter}{List of Tables}{vi}% 
+\contentsline {chapter}{List of Symbols}{vii}% 
+\contentsline {chapter}{Acknowledgments}{ix}% 
+\contentsline {chapter}{\numberline {1}Literature Review}{1}% 
+\contentsline {section}{\numberline {1.1}Homogeneous Equilibrium Model}{1}% 
+\contentsline {subsection}{\numberline {1.1.1}Brief outline of two-phase flows}{1}% 
+\contentsline {subsection}{\numberline {1.1.2}Talk about HEM at length}{1}% 
+\contentsline {section}{\numberline {1.2}Typical two-phase flow situations}{1}% 
+\contentsline {subsection}{\numberline {1.2.1}Nuclear Reactors}{1}% 
+\contentsline {subsection}{\numberline {1.2.2}Heating and Ventilation Systems}{1}% 
+\contentsline {subsection}{\numberline {1.2.3}Advanced Electronics}{1}% 
+\contentsline {section}{\numberline {1.3}Current optimization methods}{2}% 
+\contentsline {subsection}{\numberline {1.3.1}Overview of engineering design tools}{2}% 
+\contentsline {subsection}{\numberline {1.3.2}Heat Sinks}{2}% 
+\contentsline {subsection}{\numberline {1.3.3}Single-phase flows}{2}% 
+\contentsline {subsection}{\numberline {1.3.4}Genetic Algorithms for other applications}{2}% 
+\contentsline {subsection}{\numberline {1.3.5}Nick Larimer's and my previous work}{2}% 
+\contentsline {section}{\numberline {1.4}Thesis goals and outlines}{2}% 
+\renewcommand {\cftchappresnum }{Appendix }
+\contentsline {chapter}{\numberline {A}Detailed Discussion of Two-Phase Flows}{3}% 
+\contentsline {section}{\numberline {A.1}Introduction}{3}% 
+\contentsline {section}{\numberline {A.2}More Declaration}{3}% 
+\contentsline {subsection}{\numberline {A.2.1}Some Subsection Title Here}{3}% 
+\contentsline {chapter}{\numberline {B}Title of the Second Appendix}{5}% 
+\contentsline {section}{\numberline {B.1}Introduction}{5}% 
+\contentsline {section}{\numberline {B.2}More Declaration}{5}% 
+\contentsline {chapter}{\numberline {C}Title of the Third Appendix}{7}% 
+\contentsline {section}{\numberline {C.1}Introduction}{7}% 
+\contentsline {section}{\numberline {C.2}More Declaration}{7}% 
+\contentsline {chapter}{\numberline {D}Title of the Fourth Appendix}{9}% 
+\contentsline {section}{\numberline {D.1}Introduction}{9}% 
+\contentsline {section}{\numberline {D.2}More Declaration}{9}% 
+\contentsline {chapter}{\numberline {E}Title of the Fifth Appendix}{11}% 
+\contentsline {section}{\numberline {E.1}Introduction}{11}% 
+\contentsline {chapter}{Bibliography}{15}% 
